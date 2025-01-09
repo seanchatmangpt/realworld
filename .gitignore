@@ -32,3 +32,6 @@ realworld-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.lh/
+
+.priv/static/frontend/
