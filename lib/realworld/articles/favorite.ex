@@ -3,7 +3,8 @@ defmodule Realworld.Articles.Favorite do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
     notifiers: Ash.Notifier.PubSub,
-    domain: Realworld.Articles
+    domain: Realworld.Articles,
+    extensions: [AshJsonApi.Resource]
 
   postgres do
     table "favorites"
@@ -13,14 +14,6 @@ defmodule Realworld.Articles.Favorite do
       reference :user, on_delete: :delete
       reference :article, on_delete: :delete
     end
-  end
-
-  pub_sub do
-    module RealworldWeb.Endpoint
-    prefix "favorite"
-
-    publish_all :create, ["created", :article_id]
-    publish_all :destroy, ["destroyed", :article_id]
   end
 
   policies do
@@ -38,6 +31,55 @@ defmodule Realworld.Articles.Favorite do
 
     policy action_type(:destroy) do
       authorize_if relates_to_actor_via(:user)
+    end
+  end
+
+  pub_sub do
+    module RealworldWeb.Endpoint
+    prefix "favorite"
+
+    publish_all :create, ["created", :article_id]
+    publish_all :destroy, ["destroyed", :article_id]
+  end
+
+  json_api do
+    # Resource type in the JSON:API specification
+    type "favorites"
+
+    # Define the composite primary key
+    primary_key do
+      keys [:user_id, :article_id]
+    end
+
+    routes do
+      # Base path for this resource
+      base "/favorites"
+
+      # GET /favorites?article_id=:article_id - Check if the current user has favorited an article
+      get :favorited
+
+      # POST /favorites - Add a favorite
+      post :add_favorite
+
+      # DELETE /favorites/:article_id - Remove a favorite
+      delete :remove_favorite
+    end
+  end
+
+  attributes do
+    create_timestamp :created_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :user, Realworld.Accounts.User do
+      primary_key? true
+      allow_nil? false
+    end
+
+    belongs_to :article, Realworld.Articles.Article do
+      primary_key? true
+      allow_nil? false
     end
   end
 
@@ -70,24 +112,7 @@ defmodule Realworld.Articles.Favorite do
     end
   end
 
-  attributes do
-    create_timestamp :created_at
-    update_timestamp :updated_at
-  end
-
   identities do
     identity :unique_favorite, [:user_id, :article_id]
-  end
-
-  relationships do
-    belongs_to :user, Realworld.Accounts.User do
-      primary_key? true
-      allow_nil? false
-    end
-
-    belongs_to :article, Realworld.Articles.Article do
-      primary_key? true
-      allow_nil? false
-    end
   end
 end

@@ -32,6 +32,8 @@ defmodule Realworld.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:open_api_spex, "~> 3.0"},
+      {:ash_json_api, "~> 1.0"},
       {:phoenix, "~> 1.7"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_html_helpers, "~> 1.0"},
@@ -55,6 +57,7 @@ defmodule Realworld.MixProject do
       {:picosat_elixir, "~> 0.2"},
       {:slugify, "~> 1.3"},
       {:earmark, "~> 1.4"},
+      {:ymlr, "~> 2.0"},
       {:faker, "~> 0.18", only: :test}
     ]
   end

@@ -1,8 +1,8 @@
 defmodule Realworld.Profiles do
-  use Ash.Domain, otp_app: :realworld
+  use Ash.Domain, otp_app: :realworld, extensions: [AshJsonApi.Domain]
 
-  authorization do
-    authorize :by_default
+  json_api do
+    authorize? false
   end
 
   resources do
@@ -12,5 +12,9 @@ defmodule Realworld.Profiles do
       define :unfollow, args: [:target_id], require_reference?: false, get?: true
       define :list_followings, args: [:target_id]
     end
+  end
+
+  authorization do
+    authorize :by_default
   end
 end

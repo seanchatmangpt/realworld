@@ -10,7 +10,7 @@ defmodule RealworldWeb.Endpoint do
     signing_salt: "Ww3W+vvb"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -20,7 +20,7 @@ defmodule RealworldWeb.Endpoint do
     at: "/",
     from: :realworld,
     gzip: false,
-    only: RealworldWeb.static_paths()
+    only: ~w(assets favicon.ico robots.txt frontend)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
@@ -38,7 +38,7 @@ defmodule RealworldWeb.Endpoint do
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
+    parsers: [:urlencoded, :multipart, :json, AshJsonApi.Plug.Parser],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 

@@ -1,8 +1,8 @@
 defmodule Realworld.Articles do
-  use Ash.Domain, otp_app: :realworld
+  use Ash.Domain, otp_app: :realworld, extensions: [AshJsonApi.Domain]
 
-  authorization do
-    authorize :by_default
+  json_api do
+    authorize? false
   end
 
   resources do
@@ -31,5 +31,9 @@ defmodule Realworld.Articles do
     end
 
     resource Realworld.Articles.Tag
+  end
+
+  authorization do
+    authorize :by_default
   end
 end

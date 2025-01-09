@@ -2,7 +2,8 @@ defmodule Realworld.Articles.Article do
   use Ash.Resource,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
-    domain: Realworld.Articles
+    domain: Realworld.Articles,
+    extensions: [AshJsonApi.Resource]
 
   postgres do
     table "articles"
@@ -27,50 +28,35 @@ defmodule Realworld.Articles.Article do
     end
   end
 
-  actions do
-    defaults [:read, :destroy]
+  json_api do
+    # Resource type in the JSON:API specification
 
-    read :list_articles do
-      argument :filter, :map, allow_nil?: true
-      argument :private_feed?, :boolean, allow_nil?: false, default: false
+    type "articles"
 
-      pagination do
-        default_limit 20
-        offset? true
-        countable :by_default
-      end
+    routes do
+      # Base path for this resource
 
-      prepare Realworld.Articles.Article.Preparations.FilterSortFeed
-    end
+      base "/articles"
 
-    create :publish do
-      primary? true
-      accept [:title, :description, :body_raw]
+      # CRUD routes
 
-      argument :tags, {:array, :map}, allow_nil?: true
-      change manage_relationship(:tags, on_lookup: :relate, on_no_match: :create)
+      # GET /articles/:id - Fetch a specific article
+      get :read
 
-      change relate_actor(:user)
+      # GET /articles - List all articles with filters and pagination
+      index :list_articles
 
-      change Realworld.Articles.Changes.SlugifyTitle
-      change Realworld.Articles.Changes.RenderMarkdown
-    end
+      # POST /articles - Publish a new article
+      post :publish
 
-    update :update do
-      primary? true
-      require_atomic? false
-      accept [:title, :description, :body_raw]
+      # PATCH /articles/:id - Update an article
+      patch :update
 
-      argument :tags, {:array, :map}, allow_nil?: true
+      # DELETE /articles/:id - Delete an article
+      delete :destroy
 
-      change manage_relationship(:tags,
-               on_lookup: :relate,
-               on_no_match: :create,
-               on_missing: :unrelate
-             )
-
-      change Realworld.Articles.Changes.SlugifyTitle
-      change Realworld.Articles.Changes.RenderMarkdown
+      # GET /articles/slug/:slug
+      # get :get_by_slug
     end
   end
 
@@ -107,22 +93,6 @@ defmodule Realworld.Articles.Article do
     update_timestamp :updated_at
   end
 
-  identities do
-    identity :unique_slug, [:slug]
-  end
-
-  aggregates do
-    count :favorites_count, :favorites
-  end
-
-  calculations do
-    calculate :is_favorited, :boolean, expr(exists(favorites, id == ^arg(:actor_id))) do
-      argument :actor_id, :uuid do
-        allow_nil? false
-      end
-    end
-  end
-
   relationships do
     has_many :comments, Realworld.Articles.Comment
 
@@ -143,6 +113,81 @@ defmodule Realworld.Articles.Article do
       join_relationship :favorite_links
       source_attribute_on_join_resource :article_id
       destination_attribute_on_join_resource :user_id
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    read :list_articles do
+      argument :filter, :map, allow_nil?: true
+      argument :private_feed?, :boolean, allow_nil?: false, default: false
+
+      pagination do
+        default_limit 20
+        offset? true
+        countable :by_default
+      end
+
+      prepare Realworld.Articles.Article.Preparations.FilterSortFeed
+    end
+
+    read :get_by_slug do
+      argument :slug, :string do
+        allow_nil? false
+      end
+
+      # Marks this as a GET-able action
+      get? true
+
+      # Filters articles by the given slug
+      filter expr(slug == ^arg(:slug))
+    end
+
+    create :publish do
+      primary? true
+      accept [:title, :description, :body_raw]
+
+      argument :tags, {:array, :map}, allow_nil?: true
+      change manage_relationship(:tags, on_lookup: :relate, on_no_match: :create)
+
+      change relate_actor(:user)
+
+      change Realworld.Articles.Changes.SlugifyTitle
+      change Realworld.Articles.Changes.RenderMarkdown
+    end
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:title, :description, :body_raw]
+
+      argument :tags, {:array, :map}, allow_nil?: true
+
+      change manage_relationship(:tags,
+               on_lookup: :relate,
+               on_no_match: :create,
+               on_missing: :unrelate
+             )
+
+      change Realworld.Articles.Changes.SlugifyTitle
+      change Realworld.Articles.Changes.RenderMarkdown
+    end
+  end
+
+  identities do
+    identity :unique_slug, [:slug]
+  end
+
+  aggregates do
+    count :favorites_count, :favorites
+  end
+
+  calculations do
+    calculate :is_favorited, :boolean, expr(exists(favorites, id == ^arg(:actor_id))) do
+      argument :actor_id, :uuid do
+        allow_nil? false
+      end
     end
   end
 end
